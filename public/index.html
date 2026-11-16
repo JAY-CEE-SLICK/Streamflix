@@ -9,10 +9,12 @@
   ::-webkit-scrollbar { display: none; }
   .active-tab { color: #e50914 !important; }
   .active-tab svg { fill: #e50914; }
+  .hidden { display: none !important; }
 </style>
 </head>
 <body class="bg-[#0f1014] text-white font-sans overflow-hidden">
 
+  <!-- LOGIN SCREEN -->
   <div id="loginScreen" class="fixed inset-0 z-50 flex flex-col justify-center items-center bg-[#0f1014] px-8">
     <h1 class="text-4xl font-black text-[#e50914] mb-8 tracking-tighter">STREAMFLIX</h1>
     <input id="user" type="text" placeholder="Username (admin)" class="w-full max-w-xs p-4 mb-3 bg-[#1e1e24] border border-gray-700 rounded-lg text-white outline-none focus:border-[#e50914]">
@@ -20,22 +22,35 @@
     <button onclick="login()" class="w-full max-w-xs p-4 bg-[#e50914] text-white font-bold rounded-lg hover:bg-red-700 transition">Sign In</button>
   </div>
 
+  <!-- MAIN APP -->
   <div id="appScreen" class="hidden h-full flex flex-col pb-20 overflow-y-auto">
-    <header class="p-5 flex justify-between items-center sticky top-0 bg-gradient-to-b from-[#0f1014] to-transparent z-10">
+    
+    <!-- Header with Profile Dropdown -->
+    <header class="p-5 flex justify-between items-center sticky top-0 bg-gradient-to-b from-[#0f1014] to-transparent z-20">
       <div class="text-2xl font-black text-[#e50914]">STREAMFLIX</div>
-      <div class="w-9 h-9 rounded bg-blue-600 flex items-center justify-center font-bold" id="profileIcon">U</div>
+      <div onclick="toggleProfile()" class="w-9 h-9 rounded bg-blue-600 flex items-center justify-center font-bold cursor-pointer" id="profileIcon">U</div>
+      
+      <!-- Profile Dropdown -->
+      <div id="profileDropdown" class="hidden absolute top-16 right-5 bg-[#1e1e24] border border-gray-700 rounded-xl p-4 shadow-2xl w-48">
+        <p class="font-bold text-sm" id="dropUsername">Loading...</p>
+        <p class="text-xs text-gray-400 mb-4" id="dropEmail">...</p>
+        <button onclick="logout()" class="w-full bg-red-600/20 text-red-500 hover:bg-red-600 hover:text-white py-2 rounded-lg text-sm font-bold transition">Logout</button>
+      </div>
     </header>
 
+    <!-- TAB: HOME -->
     <div id="tab-home" class="px-5">
       <h2 class="text-lg font-bold mb-3">Trending Now</h2>
       <div class="flex gap-3 overflow-x-auto pb-5" id="homeList"></div>
     </div>
 
+    <!-- TAB: SEARCH -->
     <div id="tab-search" class="hidden px-5">
       <input type="text" placeholder="Search..." oninput="searchVideos(this.value)" class="w-full p-3 bg-[#1e1e24] border border-gray-700 rounded-lg text-white outline-none focus:border-[#e50914] mb-5">
       <div class="flex flex-wrap gap-3" id="searchResults"></div>
     </div>
 
+    <!-- TAB: DOWNLOADS (Upload) -->
     <div id="tab-downloads" class="hidden px-5">
       <h2 class="text-lg font-bold mb-3">Upload a Video</h2>
       <div class="bg-[#1e1e24] p-5 rounded-xl border border-gray-700">
@@ -47,14 +62,16 @@
       <div class="flex flex-wrap gap-3" id="downloadsList"></div>
     </div>
 
+    <!-- TAB: PROFILE -->
     <div id="tab-profile" class="hidden px-5 text-center mt-10">
-      <div class="w-20 h-20 bg-blue-600 rounded-full mx-auto flex items-center justify-center text-3xl font-bold mb-4">U</div>
-      <h2 class="text-xl font-bold">User</h2>
-      <p class="text-gray-400 text-sm mb-6">user@streamflix.com</p>
+      <div class="w-20 h-20 bg-blue-600 rounded-full mx-auto flex items-center justify-center text-3xl font-bold mb-4" id="profileLetter">U</div>
+      <h2 class="text-xl font-bold" id="profileUsername">User</h2>
+      <p class="text-gray-400 text-sm mb-6" id="profileEmail">user@streamflix.com</p>
       <button onclick="logout()" class="px-6 py-2 border border-gray-600 rounded-full text-gray-300 hover:bg-white hover:text-black transition">Sign Out</button>
     </div>
   </div>
 
+  <!-- BOTTOM NAV -->
   <div id="bottomNav" class="hidden fixed bottom-0 left-0 right-0 bg-[#1e1e24]/95 backdrop-blur border-t border-gray-800 flex justify-around py-4 z-20">
     <div onclick="switchTab('home')" class="tab-btn flex flex-col items-center text-gray-400 text-xs font-bold gap-1 active-tab" id="btn-home">
       <svg class="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>Home
@@ -70,13 +87,45 @@
     </div>
   </div>
 
-  <div id="playerOverlay" class="hidden fixed inset-0 z-50 bg-black flex-col">
-    <button onclick="closePlayer()" class="absolute top-5 left-5 z-50 bg-black/50 w-10 h-10 rounded-full text-white text-xl">✕</button>
-    <video id="videoPlayer" controls playsinline class="w-full h-full object-contain"></video>
+  <!-- VIDEO DETAIL / PLAYER OVERLAY -->
+  <div id="videoOverlay" class="hidden fixed inset-0 z-50 bg-[#0f1014] flex-col overflow-y-auto">
+    <div class="sticky top-0 bg-black z-10">
+      <button onclick="closeVideo()" class="absolute top-4 left-4 z-20 bg-black/50 w-10 h-10 rounded-full text-white text-xl">✕</button>
+      <video id="videoPlayer" controls playsinline class="w-full aspect-video object-contain bg-black"></video>
+    </div>
+    
+    <div class="p-5">
+      <h2 id="videoTitle" class="text-xl font-bold mb-2">Video Title</h2>
+      
+      <!-- Action Buttons -->
+      <div class="flex gap-4 mb-6 border-b border-gray-800 pb-4">
+        <button onclick="likeVideo()" class="flex items-center gap-2 text-sm font-bold text-gray-300 hover:text-[#e50914]">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"/></svg>
+          <span id="likeCount">0</span> Likes
+        </button>
+        <button onclick="shareVideo()" class="flex items-center gap-2 text-sm font-bold text-gray-300 hover:text-blue-500">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
+          Share
+        </button>
+        <button onclick="downloadVideo()" class="flex items-center gap-2 text-sm font-bold text-gray-300 hover:text-green-500">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          Download
+        </button>
+      </div>
+
+      <!-- Comments Section -->
+      <h3 class="font-bold text-lg mb-4">Comments</h3>
+      <div class="flex gap-2 mb-6">
+        <input id="commentInput" type="text" placeholder="Add a comment..." class="flex-1 bg-[#1e1e24] border border-gray-700 rounded-lg px-4 py-2 text-white outline-none">
+        <button onclick="postComment()" class="bg-[#e50914] px-4 py-2 rounded-lg font-bold">Post</button>
+      </div>
+      <div id="commentsList" class="space-y-4 pb-10"></div>
+    </div>
   </div>
 
 <script>
   let allVideos = [];
+  let currentVideo = null;
 
   async function login() {
     const u = document.getElementById('user').value;
@@ -86,10 +135,19 @@
       body: JSON.stringify({ username: u, password: p })
     });
     const data = await res.json();
+    
     if (data.success) {
       document.getElementById('loginScreen').classList.add('hidden');
       document.getElementById('appScreen').classList.remove('hidden');
       document.getElementById('bottomNav').classList.remove('hidden');
+      
+      // Set profile data
+      document.getElementById('dropUsername').innerText = data.user.username;
+      document.getElementById('dropEmail').innerText = data.user.email;
+      document.getElementById('profileUsername').innerText = data.user.username;
+      document.getElementById('profileEmail').innerText = data.user.email;
+      document.getElementById('profileLetter').innerText = data.user.username[0].toUpperCase();
+      
       loadVideos();
     } else {
       alert("Login Failed! Use admin / 123");
@@ -97,6 +155,11 @@
   }
 
   function logout() { window.location.reload(); }
+
+  function toggleProfile() {
+    const drop = document.getElementById('profileDropdown');
+    drop.classList.toggle('hidden');
+  }
 
   function switchTab(tabName) {
     ['home', 'search', 'downloads', 'profile'].forEach(t => {
@@ -115,8 +178,10 @@
   }
 
   function createCard(v) {
+    // Generate a thumbnail using the video URL itself
     return `
-      <div onclick="playVideo('${v.url}')" class="min-w-[120px] h-[180px] bg-[#1e1e24] rounded-xl flex items-end p-2 relative cursor-pointer shadow-lg active:scale-95 transition">
+      <div onclick='openVideo(${JSON.stringify(v)})' class="min-w-[120px] h-[180px] bg-[#1e1e24] rounded-xl flex items-end p-2 relative cursor-pointer shadow-lg active:scale-95 transition overflow-hidden">
+        <video src="${v.url}#t=0.1" class="absolute inset-0 w-full h-full object-cover opacity-60"></video>
         <div class="absolute inset-0 bg-gradient-to-t from-black/90 to-transparent rounded-xl"></div>
         <span class="relative text-xs font-bold z-10">${v.title}</span>
       </div>`;
@@ -139,6 +204,7 @@
     alert("Uploading... Please wait.");
     const res = await fetch('/api/upload', { method: 'POST', body: formData });
     const data = await res.json();
+    
     if (data.success) {
       alert("Uploaded successfully!");
       loadVideos();
@@ -146,19 +212,84 @@
     }
   }
 
-  function playVideo(url) {
-    document.getElementById('playerOverlay').classList.remove('hidden');
-    document.getElementById('playerOverlay').classList.add('flex');
+  function openVideo(v) {
+    currentVideo = v;
+    document.getElementById('videoOverlay').classList.remove('hidden');
+    document.getElementById('videoOverlay').classList.add('flex');
+    
+    document.getElementById('videoTitle').innerText = v.title;
+    document.getElementById('likeCount').innerText = v.likes;
+    
     const vid = document.getElementById('videoPlayer');
-    vid.src = url;
+    vid.src = v.url;
     vid.play();
+
+    // Render Comments
+    const commentsList = document.getElementById('commentsList');
+    if (v.comments.length === 0) {
+      commentsList.innerHTML = '<p class="text-gray-500 text-sm">No comments yet. Be the first!</p>';
+    } else {
+      commentsList.innerHTML = v.comments.map(c => `
+        <div class="flex gap-3">
+          <div class="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-xs font-bold">U</div>
+          <div class="bg-[#1e1e24] p-3 rounded-lg flex-1 text-sm">${c}</div>
+        </div>
+      `).join('');
+    }
   }
 
-  function closePlayer() {
-    document.getElementById('playerOverlay').classList.add('hidden');
-    document.getElementById('playerOverlay').classList.remove('flex');
+  function closeVideo() {
+    document.getElementById('videoOverlay').classList.add('hidden');
+    document.getElementById('videoOverlay').classList.remove('flex');
     const vid = document.getElementById('videoPlayer');
     vid.pause(); vid.src = "";
+  }
+
+  async function likeVideo() {
+    const res = await fetch('/api/like', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ id: currentVideo.id })
+    });
+    const data = await res.json();
+    document.getElementById('likeCount').innerText = data.likes;
+    currentVideo.likes = data.likes; // Update local cache
+  }
+
+  async function postComment() {
+    const input = document.getElementById('commentInput');
+    const text = input.value.trim();
+    if (!text) return;
+
+    const res = await fetch('/api/comment', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ id: currentVideo.id, comment: text })
+    });
+    const data = await res.json();
+    
+    input.value = '';
+    openVideo(currentVideo); // Refresh UI
+  }
+
+  function shareVideo() {
+    if (navigator.share) {
+      navigator.share({
+        title: currentVideo.title,
+        text: 'Watch this on StreamFlix!',
+        url: window.location.href
+      }).catch(console.error);
+    } else {
+      alert("Link copied to clipboard!");
+    }
+  }
+
+  function downloadVideo() {
+    // Create a temporary link to force download
+    const a = document.createElement('a');
+    a.href = currentVideo.url;
+    a.download = currentVideo.title + ".mp4";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   }
 </script>
 </body>
